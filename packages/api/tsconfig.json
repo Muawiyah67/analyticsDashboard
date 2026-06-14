@@ -16,7 +16,6 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "strictPropertyInitialization": false
-    // ❌ removed paths and baseUrl
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
