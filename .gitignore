@@ -1,1 +1,22 @@
+# Dependencies
 node_modules/
+
+# Build outputs
+dist/
+.next/
+packages/api/dist/
+packages/shared/dist/
+
+# Environment files
+.env
+.env.local
+.env*.local
+
+# Mac junk
+.DS_Store
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Vercel
+.vercel
