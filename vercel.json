@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "buildCommand": "cd packages/shared && npm run build && cd ../api && npm run build",
+  "outputDirectory": "packages/api/dist",
+  "functions": {
+    "packages/api/dist/main.js": {
+      "memory": 1024,
+      "maxDuration": 30
+    }
+  },
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "packages/api/dist/main.js"
+    }
+  ]
+}
