@@ -19,7 +19,8 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@nexus/shared": ["../shared/src/index.ts"]
     }
   },
   "include": [

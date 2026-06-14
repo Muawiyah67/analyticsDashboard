@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import {
   AreaChart,
   Area,
@@ -16,57 +17,48 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState } from "react";
-
-const revenueData = [
-  { month: "Jan", revenue: 42000, expenses: 28000 },
-  { month: "Feb", revenue: 51000, expenses: 32000 },
-  { month: "Mar", revenue: 47000, expenses: 29000 },
-  { month: "Apr", revenue: 63000, expenses: 35000 },
-  { month: "May", revenue: 58000, expenses: 33000 },
-  { month: "Jun", revenue: 72000, expenses: 40000 },
-  { month: "Jul", revenue: 69000, expenses: 38000 },
-  { month: "Aug", revenue: 84000, expenses: 44000 },
-  { month: "Sep", revenue: 78000, expenses: 42000 },
-  { month: "Oct", revenue: 91000, expenses: 48000 },
-  { month: "Nov", revenue: 87000, expenses: 46000 },
-  { month: "Dec", revenue: 102000, expenses: 54000 },
-];
-
-const weeklyData = [
-  { month: "Mon", revenue: 8200, expenses: 5100 },
-  { month: "Tue", revenue: 9400, expenses: 5800 },
-  { month: "Wed", revenue: 7800, expenses: 4900 },
-  { month: "Thu", revenue: 11200, expenses: 6700 },
-  { month: "Fri", revenue: 10500, expenses: 6200 },
-  { month: "Sat", revenue: 6800, expenses: 4100 },
-  { month: "Sun", revenue: 5400, expenses: 3300 },
-];
-
-const trafficData = [
-  { day: "Mon", organic: 3200, paid: 1400, referral: 800 },
-  { day: "Tue", organic: 3800, paid: 1600, referral: 900 },
-  { day: "Wed", organic: 3500, paid: 1200, referral: 750 },
-  { day: "Thu", organic: 4200, paid: 1800, referral: 1100 },
-  { day: "Fri", organic: 3900, paid: 1700, referral: 1000 },
-  { day: "Sat", organic: 2800, paid: 1100, referral: 650 },
-  { day: "Sun", organic: 2400, paid: 900, referral: 500 },
-];
-
-const categoryData = [
-  { name: "Electronics", value: 35, color: "#3b82f6" },
-  { name: "Clothing", value: 25, color: "#10b981" },
-  { name: "Home & Garden", value: 20, color: "#f59e0b" },
-  { name: "Sports", value: 12, color: "#ef4444" },
-  { name: "Books", value: 8, color: "#8b5cf6" },
-];
+import { AnalyticsService } from "@/lib/api/analytics.service";
+import { ProductService } from "@/lib/api/product.service";
+import { RevenueChart as RevenueChartData, TrafficData, TopProduct } from "@nexus/shared";
 
 const formatCurrency = (value: number) =>
   `$${(value / 1000).toFixed(0)}k`;
 
+// --- Revenue Chart (real data from AnalyticsService) ---
 export function RevenueChart() {
-  const [period, setPeriod] = useState("monthly");
-  const data = period === "monthly" ? revenueData : weeklyData;
+  const [period, setPeriod] = useState<"daily" | "weekly" | "monthly" | "quarterly" | "annual">("monthly");
+  const [data, setData] = useState<RevenueChartData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchRevenue = async () => {
+      setLoading(true);
+      try {
+        const res = await AnalyticsService.getRevenueData(period);
+        if (res.success && res.data) {
+          setData(res.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch revenue:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchRevenue();
+  }, [period]);
+
+  if (loading) {
+    return (
+      <Card className="border border-border shadow-sm col-span-1 lg:col-span-2">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-base font-semibold text-card-foreground">Revenue Overview</CardTitle>
+        </CardHeader>
+        <CardContent className="h-[260px] flex items-center justify-center">
+          <p className="text-sm text-muted-foreground">Loading revenue data...</p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="border border-border shadow-sm col-span-1 lg:col-span-2">
@@ -78,10 +70,12 @@ export function RevenueChart() {
               Revenue vs expenses comparison
             </CardDescription>
           </div>
-          <Tabs value={period} onValueChange={setPeriod}>
+          <Tabs value={period} onValueChange={(v) => setPeriod(v as typeof period)}>
             <TabsList className="h-8 bg-muted">
               <TabsTrigger value="weekly" className="text-xs h-6 px-3">Weekly</TabsTrigger>
               <TabsTrigger value="monthly" className="text-xs h-6 px-3">Monthly</TabsTrigger>
+              <TabsTrigger value="quarterly" className="text-xs h-6 px-3">Quarterly</TabsTrigger>
+              <TabsTrigger value="annual" className="text-xs h-6 px-3">Annual</TabsTrigger>
             </TabsList>
           </Tabs>
         </div>
@@ -112,9 +106,9 @@ export function RevenueChart() {
             <CartesianGrid strokeDasharray="3 3" stroke="currentColor" strokeOpacity={0.1} vertical={false} />
             <XAxis dataKey="month" tick={{ fontSize: 12, fill: "currentColor" }} axisLine={false} tickLine={false} className="text-muted-foreground" />
             <YAxis tickFormatter={formatCurrency} tick={{ fontSize: 12, fill: "currentColor" }} axisLine={false} tickLine={false} className="text-muted-foreground" />
-            <Tooltip
+           <Tooltip
               contentStyle={{ borderRadius: 8, border: "1px solid var(--border)", fontSize: 12, backgroundColor: "var(--card)", color: "var(--card-foreground)" }}
-            />
+           />
             <Area type="monotone" dataKey="revenue" stroke="#3b82f6" strokeWidth={2} fill="url(#revenueGradient)" />
             <Area type="monotone" dataKey="expenses" stroke="#94a3b8" strokeWidth={2} fill="url(#expensesGradient)" />
           </AreaChart>
@@ -124,18 +118,63 @@ export function RevenueChart() {
   );
 }
 
+// --- Traffic Chart (real data from AnalyticsService) ---
 export function TrafficChart() {
+  const [period, setPeriod] = useState<"week" | "month">("week");
+  const [data, setData] = useState<TrafficData[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchTraffic = async () => {
+      setLoading(true);
+      try {
+        const res = await AnalyticsService.getTrafficData(period);
+        if (res.success && res.data) {
+          setData(res.data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch traffic:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTraffic();
+  }, [period]);
+
+  if (loading) {
+    return (
+      <Card className="border border-border shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-base font-semibold text-card-foreground">Traffic Sources</CardTitle>
+        </CardHeader>
+        <CardContent className="h-[200px] flex items-center justify-center">
+          <p className="text-sm text-muted-foreground">Loading traffic data...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="border border-border shadow-sm">
       <CardHeader className="pb-4">
-        <CardTitle className="text-base font-semibold text-card-foreground">Traffic Sources</CardTitle>
-        <CardDescription className="text-muted-foreground text-sm mt-0.5">
-          Visitor acquisition this week
-        </CardDescription>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <CardTitle className="text-base font-semibold text-card-foreground">Traffic Sources</CardTitle>
+            <CardDescription className="text-muted-foreground text-sm mt-0.5">
+              Visitor acquisition this {period}
+            </CardDescription>
+          </div>
+          <Tabs value={period} onValueChange={(v) => setPeriod(v as typeof period)}>
+            <TabsList className="h-8 bg-muted">
+              <TabsTrigger value="week" className="text-xs h-6 px-3">Week</TabsTrigger>
+              <TabsTrigger value="month" className="text-xs h-6 px-3">Month</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={200}>
-          <BarChart data={trafficData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+          <BarChart data={data} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="currentColor" strokeOpacity={0.1} vertical={false} />
             <XAxis dataKey="day" tick={{ fontSize: 12, fill: "currentColor" }} axisLine={false} tickLine={false} className="text-muted-foreground" />
             <YAxis tick={{ fontSize: 12, fill: "currentColor" }} axisLine={false} tickLine={false} className="text-muted-foreground" />
@@ -164,7 +203,88 @@ export function TrafficChart() {
   );
 }
 
+// --- Category Chart (real data from products + top products) ---
 export function CategoryChart() {
+  const [categoryData, setCategoryData] = useState<{ name: string; value: number; color: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const colors = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#f97316"];
+
+  useEffect(() => {
+    const fetchCategoryData = async () => {
+      setLoading(true);
+      try {
+        // Fetch products to get categories, and top products for sales
+        const [productsRes, topProductsRes] = await Promise.all([
+          ProductService.getProducts(1, 1000),
+          AnalyticsService.getTopProducts(10),
+        ]);
+
+        if (productsRes.success && productsRes.data && topProductsRes.success && topProductsRes.data) {
+          const products = productsRes.data.data;
+          const topProducts = topProductsRes.data;
+
+          // Build a map of product ID to category
+          const productCategoryMap = new Map<string, string>();
+          products.forEach((p) => {
+            productCategoryMap.set(p.id, p.category || "Uncategorized");
+          });
+
+          // Aggregate sales by category
+          const categorySales = new Map<string, number>();
+          topProducts.forEach((product: TopProduct) => {
+            const cat = productCategoryMap.get(product.id) || "Uncategorized";
+            categorySales.set(cat, (categorySales.get(cat) || 0) + product.sales);
+          });
+
+          const total = Array.from(categorySales.values()).reduce((a, b) => a + b, 0) || 1;
+          const data = Array.from(categorySales.entries()).map(([name, sales], i) => ({
+            name,
+            value: Math.round((sales / total) * 100),
+            color: colors[i % colors.length],
+          }));
+
+          data.sort((a, b) => b.value - a.value);
+          setCategoryData(data);
+        }
+      } catch (err) {
+        console.error("Failed to fetch category data:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCategoryData();
+  }, []);
+
+  if (loading) {
+    return (
+      <Card className="border border-border shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-base font-semibold text-card-foreground">Sales by Category</CardTitle>
+        </CardHeader>
+        <CardContent className="h-[180px] flex items-center justify-center">
+          <p className="text-sm text-muted-foreground">Loading category data...</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (categoryData.length === 0) {
+    return (
+      <Card className="border border-border shadow-sm">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-base font-semibold text-card-foreground">Sales by Category</CardTitle>
+          <CardDescription className="text-muted-foreground text-sm mt-0.5">
+            No sales data yet
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="h-[180px] flex items-center justify-center">
+          <p className="text-sm text-muted-foreground">Create orders to see category distribution</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="border border-border shadow-sm">
       <CardHeader className="pb-4">

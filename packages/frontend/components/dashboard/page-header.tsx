@@ -6,6 +6,8 @@ interface PageHeaderProps {
   action?: {
     label: string;
     icon: React.ElementType;
+    onClick?: () => void;
+    disabled?: boolean; 
   };
 }
 
@@ -19,7 +21,11 @@ export function PageHeader({ title, description, action }: PageHeaderProps) {
         <p className="mt-1 text-sm text-muted-foreground">{description}</p>
       </div>
       {action && Icon ? (
-        <Button className="gap-2 self-start sm:self-auto">
+        <Button
+          className="gap-2 self-start sm:self-auto"
+          onClick={action.onClick}
+          disabled={action.disabled}
+        >
           <Icon className="h-4 w-4" />
           {action.label}
         </Button>

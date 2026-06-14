@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
-  Users,
   BarChart3,
   ShoppingCart,
   FileText,
@@ -14,14 +13,18 @@ import {
   TrendingUp,
   Package,
   ChevronRight,
+  UserCheck,
+  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { UserNav } from "@/components/dashboard/user-nav";
+import { AuthService } from "@/lib/api/auth.service";
 
 const navItems = [
   { label: "Overview", icon: LayoutDashboard, href: "/" },
   { label: "Analytics", icon: BarChart3, href: "/analytics", badge: "New" },
-  { label: "Users", icon: Users, href: "/users", badge: "2.4k" },
+  { label: "Customers", icon: UserCheck, href: "/customers" },
   { label: "Orders", icon: ShoppingCart, href: "/orders", badge: "12" },
   { label: "Products", icon: Package, href: "/products" },
   { label: "Revenue", icon: TrendingUp, href: "/revenue" },
@@ -36,6 +39,11 @@ const bottomItems = [
 
 export function Sidebar() {
   const pathname = usePathname();
+
+  const handleLogout = () => {
+    AuthService.logout();
+    window.location.href = "/login";
+  };
 
   return (
     <aside className="flex flex-col w-64 min-h-screen bg-sidebar border-r border-sidebar-border">
@@ -115,18 +123,20 @@ export function Sidebar() {
         })}
       </div>
 
+      {/* Logout button */}
+      <div className="px-3 pb-2">
+        <button
+          onClick={handleLogout}
+          className="flex w-full items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent transition-all duration-150"
+        >
+          <LogOut className="w-4 h-4 shrink-0" />
+          <span>Log Out</span>
+        </button>
+      </div>
+
       {/* User profile */}
       <div className="px-3 pb-4">
-        <div className="flex items-center gap-3 px-3 py-3 rounded-lg bg-sidebar-accent border border-sidebar-border">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center text-white text-xs font-bold shrink-0">
-            JD
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sidebar-foreground text-sm font-medium leading-none truncate">John Doe</p>
-            <p className="text-sidebar-foreground/60 text-xs mt-0.5 truncate">john@company.com</p>
-          </div>
-          <Settings className="w-3.5 h-3.5 text-sidebar-foreground/50 shrink-0" />
-        </div>
+        <UserNav />
       </div>
     </aside>
   );

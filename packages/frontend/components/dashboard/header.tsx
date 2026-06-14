@@ -1,12 +1,13 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
-import { Search, Bell, Sun, Moon, Menu, ChevronDown } from "lucide-react";
+import { useSyncExternalStore, useState, useEffect } from "react";
+import { Search, Bell, Sun, Moon, Menu, LogOut, Settings, ChevronDown } from "lucide-react";
 import { useTheme } from "next-themes";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { AuthService } from "@/lib/api/auth.service";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,6 +24,7 @@ interface HeaderProps {
 export function Header({ onMenuToggle }: HeaderProps) {
   const { resolvedTheme, setTheme } = useTheme();
   const pathname = usePathname();
+  const router = useRouter();
   const mounted = useSyncExternalStore(
     () => () => undefined,
     () => true,
@@ -94,30 +96,59 @@ export function Header({ onMenuToggle }: HeaderProps) {
 
         <div className="w-px h-6 bg-border mx-1" />
 
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2.5 pl-1 pr-2 py-1 rounded-lg hover:bg-muted transition-colors">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-cyan-400 flex items-center justify-center text-white text-xs font-bold">
-                JD
-              </div>
-              <div className="hidden sm:block text-left">
-                <p className="text-sm font-medium text-foreground leading-none">John Doe</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Admin</p>
-              </div>
-              <ChevronDown className="w-3.5 h-3.5 text-muted-foreground hidden sm:block" />
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-52 bg-popover text-popover-foreground">
-            <DropdownMenuLabel>My Account</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>Profile</DropdownMenuItem>
-            <DropdownMenuItem>Settings</DropdownMenuItem>
-            <DropdownMenuItem>Billing</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-red-500">Sign out</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <UserNav />
       </div>
     </header>
+  );
+}
+
+function UserNav() {
+  const router = useRouter();
+  const [userName, setUserName] = useState("User");
+
+  useEffect(() => {
+    AuthService.getUserName().then(setUserName);
+  }, []);
+
+  const initials = userName
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
+
+  const handleLogout = () => {
+    AuthService.logout();
+    window.location.href = "/login";
+  };
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button className="flex items-center gap-2 rounded-lg p-1.5 hover:bg-muted transition-colors">
+          <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
+            <span className="text-primary-foreground text-xs font-bold">
+              {initials}
+            </span>
+          </div>
+          <span className="hidden md:block text-sm font-medium text-foreground">
+            {userName}
+          </span>
+          <ChevronDown className="hidden md:block w-3 h-3 text-muted-foreground" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-56">
+        <DropdownMenuLabel>My Account</DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => router.push("/settings")}>
+          <Settings className="mr-2 h-4 w-4" />
+          Settings
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={handleLogout}>
+          <LogOut className="mr-2 h-4 w-4" />
+          Log out
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

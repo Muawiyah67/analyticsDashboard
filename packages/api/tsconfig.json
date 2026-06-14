@@ -12,9 +12,12 @@
     "noImplicitAny": true,
     "esModuleInterop": true,
     "resolveJsonModule": true,
-    "moduleResolution": "nodenext"
+    "moduleResolution": "nodenext",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "strictPropertyInitialization": false
+    // ❌ removed paths and baseUrl
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
 }
-

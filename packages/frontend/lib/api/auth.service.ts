@@ -1,117 +1,112 @@
-import { apiClient } from './client';
-import { AuthCredentials, AuthResponse, User, ApiResponse } from '@/lib/types';
+import { ApiResponse } from "@nexus/shared";
+
+export interface AuthCredentials {
+  email: string;
+  password: string;
+}
+
+export interface Company {
+  id: string;
+  name: string;
+}
+
+export interface User {
+  id: string;
+  email: string;
+  name: string;
+  
+}
+
+export interface AuthResponse {
+  accessToken: string;
+  refreshToken: string;
+  user: User;
+  company: Company;
+}
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api";
 
 export class AuthService {
-  private static readonly BASE_ENDPOINT = '/auth';
-
-  /**
-   * Register new user
-   */
-  static async register(email: string, password: string, name: string): Promise<ApiResponse<AuthResponse>> {
-    return apiClient.post<AuthResponse>(`${this.BASE_ENDPOINT}/register`, {
-      email,
-      password,
-      name,
+  static async register(
+    email: string,
+    password: string,
+    name: string,
+    companyName?: string,
+    companySize?: string,
+    plan?: string
+  ): Promise<ApiResponse<AuthResponse>> {
+    const response = await fetch(`${API_URL}/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email,
+        password,
+        name,
+        companyName,
+        companySize,
+        plan,
+      }),
     });
+
+    const data = await response.json();
+    if (!response.ok) {
+      return { success: false, message: data.message || "Registration failed" };
+    }
+
+    if (data.data?.accessToken) {
+      localStorage.setItem("accessToken", data.data.accessToken);
+    }
+
+    return data;
   }
 
-  /**
-   * Login user
-   */
   static async login(credentials: AuthCredentials): Promise<ApiResponse<AuthResponse>> {
-    const response = await apiClient.post<AuthResponse>(`${this.BASE_ENDPOINT}/login`, credentials);
+    const response = await fetch(`${API_URL}/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(credentials),
+    });
 
-    if (response.success && response.data?.accessToken) {
-      apiClient.setToken(response.data.accessToken);
+    const data = await response.json();
+    if (!response.ok) {
+      return { success: false, message: data.message || "Login failed" };
     }
 
-    return response;
+    if (data.data?.accessToken) {
+      localStorage.setItem("accessToken", data.data.accessToken);
+    }
+
+    return data;
   }
 
-  /**
-   * Logout user
-   */
   static async logout(): Promise<ApiResponse<void>> {
-    apiClient.clearToken();
-    return apiClient.post<void>(`${this.BASE_ENDPOINT}/logout`, {});
+    localStorage.removeItem("accessToken");
+    return { success: true, message: "Logged out" };
   }
 
-  /**
-   * Refresh access token
-   */
-  static async refreshToken(refreshToken: string): Promise<ApiResponse<AuthResponse>> {
-    const response = await apiClient.post<AuthResponse>(`${this.BASE_ENDPOINT}/refresh`, {
-      refreshToken,
+  static async getCurrentUser(): Promise<ApiResponse<User & { company?: Company }>> {
+    const token = localStorage.getItem("accessToken");
+    if (!token) return { success: false, message: "Not authenticated" };
+
+    const response = await fetch(`${API_URL}/auth/me`, {
+      headers: { Authorization: `Bearer ${token}` },
     });
 
-    if (response.success && response.data?.accessToken) {
-      apiClient.setToken(response.data.accessToken);
+    const data = await response.json();
+    if (!response.ok) {
+      return { success: false, message: data.message || "Failed to get user" };
     }
 
-    return response;
+    return data;
   }
 
-  /**
-   * Get current user
-   */
-  static async getCurrentUser(): Promise<ApiResponse<User>> {
-    return apiClient.get<User>(`${this.BASE_ENDPOINT}/me`);
+  static async getUserName(): Promise<string> {
+    const { data, success } = await this.getCurrentUser();
+    if (!success || !data) return "User";
+    return data.name || data.email?.split("@")[0] || "User";
   }
 
-  /**
-   * Verify token
-   */
-  static async verifyToken(): Promise<ApiResponse<{ valid: boolean }>> {
-    return apiClient.get<{ valid: boolean }>(`${this.BASE_ENDPOINT}/verify`);
-  }
-
-  /**
-   * Request password reset
-   */
-  static async requestPasswordReset(email: string): Promise<ApiResponse<{ message: string }>> {
-    return apiClient.post<{ message: string }>(`${this.BASE_ENDPOINT}/forgot-password`, {
-      email,
-    });
-  }
-
-  /**
-   * Reset password with token
-   */
-  static async resetPassword(token: string, newPassword: string): Promise<ApiResponse<{ message: string }>> {
-    return apiClient.post<{ message: string }>(`${this.BASE_ENDPOINT}/reset-password`, {
-      token,
-      newPassword,
-    });
-  }
-
-  /**
-   * Change password
-   */
-  static async changePassword(oldPassword: string, newPassword: string): Promise<ApiResponse<{ message: string }>> {
-    return apiClient.post<{ message: string }>(`${this.BASE_ENDPOINT}/change-password`, {
-      oldPassword,
-      newPassword,
-    });
-  }
-
-  /**
-   * Enable two-factor authentication
-   */
-  static async enableTwoFactor(): Promise<ApiResponse<{ secret: string; qrCode: string }>> {
-    return apiClient.post<{ secret: string; qrCode: string }>(`${this.BASE_ENDPOINT}/2fa/enable`, {});
-  }
-
-  /**
-   * Verify two-factor authentication
-   */
-  static async verifyTwoFactor(code: string): Promise<ApiResponse<{ verified: boolean; backupCodes: string[] }>> {
-    return apiClient.post<{ verified: boolean; backupCodes: string[] }>(`${this.BASE_ENDPOINT}/2fa/verify`, { code });
-  }
-
-  /**
-   * Disable two-factor authentication
-   */
-  static async disableTwoFactor(password: string): Promise<ApiResponse<{ message: string }>> {
-    return apiClient.post<{ message: string }>(`${this.BASE_ENDPOINT}/2fa/disable`, { password });
+  static getToken(): string | null {
+    return localStorage.getItem("accessToken");
   }
 }

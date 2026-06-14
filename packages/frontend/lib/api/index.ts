@@ -11,4 +11,4 @@ export { OrderService } from './order.service';
 export { ProductService } from './product.service';
 
 // Re-export all types
-export * from '@/lib/types';
+export * from '@nexus/shared';

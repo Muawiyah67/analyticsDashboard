@@ -1,32 +1,11 @@
-import { ApiResponse, ErrorResponse } from '@/lib/types';
+import { ApiResponse, ErrorResponse } from '@nexus/shared';
+import { AuthService } from './auth.service';
 
 export class ApiClient {
   public readonly baseUrl: string;
-  private token: string | null = null;
 
   constructor(baseUrl: string = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api') {
     this.baseUrl = baseUrl;
-    this.loadToken();
-  }
-
-  private loadToken(): void {
-    if (typeof window !== 'undefined') {
-      this.token = localStorage.getItem('accessToken');
-    }
-  }
-
-  public setToken(token: string): void {
-    this.token = token;
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('accessToken', token);
-    }
-  }
-
-  public clearToken(): void {
-    this.token = null;
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem('accessToken');
-    }
   }
 
   private getHeaders(): HeadersInit {
@@ -34,8 +13,9 @@ export class ApiClient {
       'Content-Type': 'application/json',
     };
 
-    if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
+    const token = AuthService.getToken();
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
     }
 
     return headers;
@@ -68,9 +48,7 @@ export class ApiClient {
   }
 
   async get<T = unknown>(endpoint: string): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, {
-      method: 'GET',
-    });
+    return this.request<T>(endpoint, { method: 'GET' });
   }
 
   async post<T = unknown>(endpoint: string, body?: unknown): Promise<ApiResponse<T>> {
@@ -95,9 +73,7 @@ export class ApiClient {
   }
 
   async delete<T = unknown>(endpoint: string): Promise<ApiResponse<T>> {
-    return this.request<T>(endpoint, {
-      method: 'DELETE',
-    });
+    return this.request<T>(endpoint, { method: 'DELETE' });
   }
 }
 

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Bell, Lock, Monitor, Moon, Palette, Save, Settings as SettingsIcon, Sun, Users } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Bell, Lock, Monitor, Moon, Palette, Save, Settings as SettingsIcon, Sun, Users, Trash2, Plus } from "lucide-react";
 import { useTheme } from "next-themes";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { Button } from "@/components/ui/button";
@@ -19,9 +19,127 @@ const sections = [
   { id: "appearance", label: "Appearance", icon: Palette },
 ];
 
+interface UserSettings {
+  fullName: string;
+  email: string;
+  company: string;
+  phone: string;
+  notifications: {
+    newOrders: boolean;
+    orderUpdates: boolean;
+    lowStockAlerts: boolean;
+    revenueReports: boolean;
+  };
+  theme: string;
+}
+
+interface TeamMember {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
 export default function SettingsPage() {
   const [tab, setTab] = useState("account");
   const { theme, setTheme } = useTheme();
+  const [saved, setSaved] = useState(false);
+
+  const [settings, setSettings] = useState<UserSettings>({
+    fullName: "",
+    email: "",
+    company: "",
+    phone: "",
+    notifications: {
+      newOrders: true,
+      orderUpdates: true,
+      lowStockAlerts: true,
+      revenueReports: false,
+    },
+    theme: "system",
+  });
+
+  const [passwords, setPasswords] = useState({
+    current: "",
+    new: "",
+    confirm: "",
+  });
+
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState("Viewer");
+
+  // FIX: Wrap localStorage reads in setTimeout to avoid setState during render
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const savedSettings = localStorage.getItem("nexus_settings");
+      if (savedSettings) {
+        setSettings(JSON.parse(savedSettings));
+      }
+      const savedTeam = localStorage.getItem("nexus_team");
+      if (savedTeam) {
+        setTeamMembers(JSON.parse(savedTeam));
+      } else {
+        const defaultTeam = [
+          { id: "1", name: "John Doe", email: "john@company.com", role: "Admin" },
+          { id: "2", name: "Jane Smith", email: "jane@company.com", role: "Editor" },
+          { id: "3", name: "Bob Johnson", email: "bob@company.com", role: "Viewer" },
+        ];
+        setTeamMembers(defaultTeam);
+        localStorage.setItem("nexus_team", JSON.stringify(defaultTeam));
+      }
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const saveSettings = () => {
+    localStorage.setItem("nexus_settings", JSON.stringify(settings));
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const saveNotifications = () => {
+    localStorage.setItem("nexus_settings", JSON.stringify(settings));
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  const updatePassword = () => {
+    if (passwords.new !== passwords.confirm) {
+      alert("Passwords don't match!");
+      return;
+    }
+    if (passwords.new.length < 8) {
+      alert("Password must be at least 8 characters!");
+      return;
+    }
+    alert("Password updated successfully!");
+    setPasswords({ current: "", new: "", confirm: "" });
+  };
+
+  const inviteMember = () => {
+    if (!inviteEmail.includes("@")) {
+      alert("Please enter a valid email!");
+      return;
+    }
+    const newMember: TeamMember = {
+      id: Date.now().toString(),
+      name: inviteEmail.split("@")[0],
+      email: inviteEmail,
+      role: inviteRole,
+    };
+    const updated = [...teamMembers, newMember];
+    setTeamMembers(updated);
+    localStorage.setItem("nexus_team", JSON.stringify(updated));
+    setInviteEmail("");
+    setInviteRole("Viewer");
+  };
+
+  const removeMember = (id: string) => {
+    const updated = teamMembers.filter((m) => m.id !== id);
+    setTeamMembers(updated);
+    localStorage.setItem("nexus_team", JSON.stringify(updated));
+  };
 
   return (
     <>
@@ -50,65 +168,177 @@ export default function SettingsPage() {
         <div className="lg:col-span-3">
           {tab === "account" && (
             <SettingsCard title="Account Settings" description="Manage your account information">
-              <Field label="Full Name" defaultValue="John Doe" />
-              <Field label="Email Address" defaultValue="john@company.com" type="email" />
-              <Field label="Company" defaultValue="Acme Corporation" />
-              <Field label="Phone" defaultValue="+1 (555) 000-0000" type="tel" />
-              <SaveButton label="Save Changes" />
+              <div className="space-y-2">
+                <Label className="font-medium text-foreground">Full Name</Label>
+                <Input
+                  className="h-9"
+                  value={settings.fullName}
+                  onChange={(e) => setSettings({ ...settings, fullName: e.target.value })}
+                  placeholder="Enter your name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-medium text-foreground">Email Address</Label>
+                <Input
+                  className="h-9"
+                  type="email"
+                  value={settings.email}
+                  onChange={(e) => setSettings({ ...settings, email: e.target.value })}
+                  placeholder="Enter your email"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-medium text-foreground">Company</Label>
+                <Input
+                  className="h-9"
+                  value={settings.company}
+                  onChange={(e) => setSettings({ ...settings, company: e.target.value })}
+                  placeholder="Enter company name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-medium text-foreground">Phone</Label>
+                <Input
+                  className="h-9"
+                  type="tel"
+                  value={settings.phone}
+                  onChange={(e) => setSettings({ ...settings, phone: e.target.value })}
+                  placeholder="Enter phone number"
+                />
+              </div>
+              <div className="border-t border-border pt-4">
+                <Button onClick={saveSettings} className="gap-2">
+                  <Save className="h-4 w-4" />
+                  {saved ? "Saved!" : "Save Changes"}
+                </Button>
+              </div>
             </SettingsCard>
           )}
 
           {tab === "notifications" && (
             <SettingsCard title="Notifications" description="Configure how you receive updates">
               {[
-                ["New Orders", "Get notified when a new order is placed", true],
-                ["Order Updates", "Receive updates on order status changes", true],
-                ["Low Stock Alerts", "Alerts when product inventory is low", true],
-                ["Revenue Reports", "Weekly revenue and sales reports", false],
-              ].map(([label, description, enabled]) => (
-                <div key={String(label)} className="flex items-center justify-between gap-4 rounded-lg p-3 hover:bg-muted/50">
+                { key: "newOrders", label: "New Orders", description: "Get notified when a new order is placed" },
+                { key: "orderUpdates", label: "Order Updates", description: "Receive updates on order status changes" },
+                { key: "lowStockAlerts", label: "Low Stock Alerts", description: "Alerts when product inventory is low" },
+                { key: "revenueReports", label: "Revenue Reports", description: "Weekly revenue and sales reports" },
+              ].map(({ key, label, description }) => (
+                <div key={key} className="flex items-center justify-between gap-4 rounded-lg p-3 hover:bg-muted/50">
                   <div>
                     <p className="text-sm font-medium text-foreground">{label}</p>
                     <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
                   </div>
-                  <Switch defaultChecked={Boolean(enabled)} />
+                  <Switch
+                    checked={settings.notifications[key as keyof typeof settings.notifications]}
+                    onCheckedChange={(checked) =>
+                      setSettings({
+                        ...settings,
+                        notifications: {
+                          ...settings.notifications,
+                          [key]: checked,
+                        },
+                      })
+                    }
+                  />
                 </div>
               ))}
-              <SaveButton label="Save Preferences" />
+              <div className="border-t border-border pt-4">
+                <Button onClick={saveNotifications} className="gap-2">
+                  <Save className="h-4 w-4" />
+                  {saved ? "Saved!" : "Save Preferences"}
+                </Button>
+              </div>
             </SettingsCard>
           )}
 
           {tab === "security" && (
             <SettingsCard title="Security" description="Manage your security and privacy settings">
-              <Field label="Current Password" placeholder="Password" type="password" />
-              <Field label="New Password" placeholder="New password" type="password" />
-              <Field label="Confirm New Password" placeholder="Confirm password" type="password" />
+              <div className="space-y-2">
+                <Label className="font-medium text-foreground">Current Password</Label>
+                <Input
+                  className="h-9"
+                  type="password"
+                  value={passwords.current}
+                  onChange={(e) => setPasswords({ ...passwords, current: e.target.value })}
+                  placeholder="Current password"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-medium text-foreground">New Password</Label>
+                <Input
+                  className="h-9"
+                  type="password"
+                  value={passwords.new}
+                  onChange={(e) => setPasswords({ ...passwords, new: e.target.value })}
+                  placeholder="New password"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-medium text-foreground">Confirm New Password</Label>
+                <Input
+                  className="h-9"
+                  type="password"
+                  value={passwords.confirm}
+                  onChange={(e) => setPasswords({ ...passwords, confirm: e.target.value })}
+                  placeholder="Confirm password"
+                />
+              </div>
               <div className="rounded-lg border border-border bg-muted/50 p-4">
                 <p className="text-sm text-muted-foreground">Strong passwords include uppercase, lowercase, numbers, and special characters.</p>
               </div>
-              <SaveButton label="Update Password" />
+              <div className="border-t border-border pt-4">
+                <Button onClick={updatePassword} className="gap-2">
+                  <Lock className="h-4 w-4" />
+                  Update Password
+                </Button>
+              </div>
             </SettingsCard>
           )}
 
           {tab === "team" && (
             <SettingsCard title="Team & Permissions" description="Manage team members and access">
-              {[
-                ["John Doe", "john@company.com", "Admin"],
-                ["Jane Smith", "jane@company.com", "Editor"],
-                ["Bob Johnson", "bob@company.com", "Viewer"],
-              ].map(([name, email, role]) => (
-                <div key={email} className="flex items-center justify-between rounded-lg border border-border p-3">
-                  <div>
-                    <p className="text-sm font-medium text-foreground">{name}</p>
-                    <p className="text-xs text-muted-foreground">{email}</p>
+              <div className="space-y-3">
+                {teamMembers.map((member) => (
+                  <div key={member.id} className="flex items-center justify-between rounded-lg border border-border p-3">
+                    <div>
+                      <p className="text-sm font-medium text-foreground">{member.name}</p>
+                      <p className="text-xs text-muted-foreground">{member.email}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="rounded bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">{member.role}</span>
+                      <button
+                        onClick={() => removeMember(member.id)}
+                        className="rounded p-1 text-muted-foreground hover:text-red-500"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
-                  <span className="rounded bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">{role}</span>
+                ))}
+              </div>
+              <div className="rounded-lg border border-border p-4 space-y-3">
+                <p className="text-sm font-medium text-foreground">Invite Team Member</p>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Email address"
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    className="h-9"
+                  />
+                  <select
+                    value={inviteRole}
+                    onChange={(e) => setInviteRole(e.target.value)}
+                    className="h-9 rounded-md border border-border bg-background px-3 text-sm"
+                  >
+                    <option>Admin</option>
+                    <option>Editor</option>
+                    <option>Viewer</option>
+                  </select>
+                  <Button onClick={inviteMember} size="sm">
+                    <Plus className="h-4 w-4" />
+                  </Button>
                 </div>
-              ))}
-              <Button className="gap-2">
-                <Users className="h-4 w-4" />
-                Invite Team Member
-              </Button>
+              </div>
             </SettingsCard>
           )}
 
@@ -164,30 +394,5 @@ function SettingsCard({
       </CardHeader>
       <CardContent className="space-y-6 p-6">{children}</CardContent>
     </Card>
-  );
-}
-
-function Field({
-  label,
-  ...props
-}: React.ComponentProps<typeof Input> & {
-  label: string;
-}) {
-  return (
-    <div className="space-y-2">
-      <Label className="font-medium text-foreground">{label}</Label>
-      <Input className="h-9" {...props} />
-    </div>
-  );
-}
-
-function SaveButton({ label }: { label: string }) {
-  return (
-    <div className="border-t border-border pt-4">
-      <Button className="gap-2">
-        <Save className="h-4 w-4" />
-        {label}
-      </Button>
-    </div>
   );
 }

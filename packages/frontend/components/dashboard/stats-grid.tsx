@@ -1,8 +1,10 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { TrendingUp, TrendingDown, Users, DollarSign, ShoppingCart, Eye } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { AnalyticsService } from "@/lib/api/analytics.service";
 
 interface StatCardProps {
   title: string;
@@ -45,46 +47,98 @@ function StatCard({ title, value, change, changeLabel, icon: Icon, iconBg, iconC
   );
 }
 
-const stats: StatCardProps[] = [
-  {
-    title: "Total Revenue",
-    value: "$84,254",
-    change: 12.5,
-    changeLabel: "vs last month",
-    icon: DollarSign,
-    iconBg: "bg-blue-500/10",
-    iconColor: "text-blue-500",
-  },
-  {
-    title: "Active Users",
-    value: "24,521",
-    change: 8.2,
-    changeLabel: "vs last month",
-    icon: Users,
-    iconBg: "bg-emerald-500/10",
-    iconColor: "text-emerald-500",
-  },
-  {
-    title: "Total Orders",
-    value: "3,847",
-    change: -2.4,
-    changeLabel: "vs last month",
-    icon: ShoppingCart,
-    iconBg: "bg-amber-500/10",
-    iconColor: "text-amber-500",
-  },
-  {
-    title: "Page Views",
-    value: "1.2M",
-    change: 18.7,
-    changeLabel: "vs last month",
-    icon: Eye,
-    iconBg: "bg-rose-500/10",
-    iconColor: "text-rose-500",
-  },
-];
-
 export function StatsGrid() {
+  const [stats, setStats] = useState<StatCardProps[]>([
+    {
+      title: "Total Revenue",
+      value: "$0",
+      change: 0,
+      changeLabel: "vs last month",
+      icon: DollarSign,
+      iconBg: "bg-blue-500/10",
+      iconColor: "text-blue-500",
+    },
+    {
+      title: "Active Customers",
+      value: "0",
+      change: 0,
+      changeLabel: "vs last month",
+      icon: Users,
+      iconBg: "bg-emerald-500/10",
+      iconColor: "text-emerald-500",
+    },
+    {
+      title: "Total Orders",
+      value: "0",
+      change: 0,
+      changeLabel: "vs last month",
+      icon: ShoppingCart,
+      iconBg: "bg-amber-500/10",
+      iconColor: "text-amber-500",
+    },
+    {
+      title: "Page Views",
+      value: "0",
+      change: 0,
+      changeLabel: "vs last month",
+      icon: Eye,
+      iconBg: "bg-rose-500/10",
+      iconColor: "text-rose-500",
+    },
+  ]);
+
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await AnalyticsService.getDashboardStats();
+        if (res.success && res.data) {
+          const data = res.data;
+          setStats([
+            {
+              title: "Total Revenue",
+              value: `$${data.totalRevenue?.toLocaleString() || "0"}`,
+              change: data.revenueChange ?? 0,
+              changeLabel: "vs last month",
+              icon: DollarSign,
+              iconBg: "bg-blue-500/10",
+              iconColor: "text-blue-500",
+            },
+            {
+              title: "Active Customers",
+              value: data.activeCustomers?.toLocaleString() || "0",
+              change: data.usersChange ?? 0,
+              changeLabel: "vs last month",
+              icon: Users,
+              iconBg: "bg-emerald-500/10",
+              iconColor: "text-emerald-500",
+            },
+            {
+              title: "Total Orders",
+              value: data.totalOrders?.toLocaleString() || "0",
+              change: data.ordersChange ?? 0,
+              changeLabel: "vs last month",
+              icon: ShoppingCart,
+              iconBg: "bg-amber-500/10",
+              iconColor: "text-amber-500",
+            },
+            {
+              title: "Page Views",
+              value: data.pageViews ? `${(data.pageViews / 1000000).toFixed(1)}M` : "0",
+              change: data.pageViewsChange ?? 0,
+              changeLabel: "vs last month",
+              icon: Eye,
+              iconBg: "bg-rose-500/10",
+              iconColor: "text-rose-500",
+            },
+          ]);
+        }
+      } catch (err) {
+        console.error("Failed to fetch stats:", err);
+      }
+    };
+    fetchStats();
+  }, []);
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
       {stats.map((stat) => (

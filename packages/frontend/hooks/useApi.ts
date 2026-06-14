@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from 'react';
-import { ApiResponse, PaginatedResponse } from '@/lib/types';
+import { ApiResponse, PaginatedResponse } from '@nexus/shared';
 
 interface UseApiState<T> {
   data: T | null;

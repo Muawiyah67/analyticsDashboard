@@ -40,7 +40,15 @@ export enum UserRole {
   USER = 'user',
   VIEWER = 'viewer',
 }
-
+export interface Customer {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  address?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
 export enum UserStatus {
   ACTIVE = 'active',
   INACTIVE = 'inactive',
@@ -186,10 +194,11 @@ export interface CreateProductDto {
   description: string;
   category: string;
   price: number;
-  cost: number;
+  cost?: number;
   stock: number;
   lowStockThreshold?: number;
   images?: string[];
+  status?: ProductStatus;
 }
 
 export interface UpdateProductDto {
@@ -217,17 +226,20 @@ export interface ProductListFilter {
 /* ============================================================================
    ANALYTICS TYPES
    ============================================================================ */
-
 export interface DashboardStats {
   totalRevenue: number;
-  activeUsers: number;
+  activeCustomers: number;
   totalOrders: number;
+  totalProducts: number;
   pageViews: number;
-  revenueChange: number;
-  usersChange: number;
-  ordersChange: number;
-  pageViewsChange: number;
+  revenueChange?: number;
+  usersChange?: number;
+  ordersChange?: number;
+  pageViewsChange?: number;
+  conversionRate?: number;
+  avgSessionDuration?: number;
 }
+
 
 export interface RevenueChart {
   month: string;
@@ -291,24 +303,30 @@ export interface Report {
   generatedBy: string;
   fileUrl?: string;
   fileSize?: number;
-  createdAt: Date;
-  updatedAt: Date;
-  completedAt?: Date;
+  fileContent?: string;
+  dateRangeStart?: string;
+  dateRangeEnd?: string;
+  filters?: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+  completedAt?: string;
+   slug?: string;
 }
 
 export interface CreateReportDto {
   name: string;
   type: ReportType;
   description?: string;
-  dateRange: AnalyticsDateRange;
+  dateRangeStart?: string;
+  dateRangeEnd?: string;
   filters?: Record<string, unknown>;
 }
 
 export interface ReportListFilter {
   type?: ReportType;
   status?: ReportStatus;
-  dateFrom?: Date;
-  dateTo?: Date;
+  dateFrom?: string;
+  dateTo?: string;
 }
 
 /* ============================================================================

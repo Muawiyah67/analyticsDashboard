@@ -1,5 +1,5 @@
 import { apiClient } from './client';
-import { Order, CreateOrderDto, UpdateOrderDto, OrderListFilter, ApiResponse, PaginatedResponse } from '@/lib/types';
+import { Order, CreateOrderDto, UpdateOrderDto, OrderListFilter, ApiResponse, PaginatedResponse } from '@nexus/shared';
 
 export class OrderService {
   private static readonly BASE_ENDPOINT = '/orders';
