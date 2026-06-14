@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "cd packages/shared && npm run build && cd ../api && npm run build",
+  "buildCommand": "cd ../../ && cd packages/shared && npm run build && cd ../api && npm run build",
   "outputDirectory": "packages/api/dist",
   "functions": {
     "packages/api/dist/main.js": {
